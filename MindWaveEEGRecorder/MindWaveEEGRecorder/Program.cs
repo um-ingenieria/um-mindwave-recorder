@@ -13,7 +13,7 @@ namespace MindWaveEEGRecorder
     class Program
     {
         static Connector connector;
-        static SqlConnection Conexion = new SqlConnection("Data Source=DESKTOP-63P1QPG;Initial Catalog=UM_NEUROSKY;Integrated Security=True;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False");
+        static SqlConnection Conexion = new SqlConnection("Data Source=DESKTOP-KQBRIL0\\SQLEXPRESS;Initial Catalog=UM_NEUROSKY;Integrated Security=True;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False");
         static SqlCommand cmd;
         static string prueba;
         static double taim;
@@ -61,7 +61,7 @@ namespace MindWaveEEGRecorder
             Console.Write("Enter Test Name: ");
             testName = Console.ReadLine();
             testDate = DateTime.Now.ToString("M/d/yyyy");
-            path = "Tests\\" + testName + "-" + DateTime.Now.ToString("M-d-yyyy") + "\\";
+            path = "..\\..\\..\\Tests\\" + testName + "-" + DateTime.Now.ToString("M-d-yyyy") + "\\";
 
             
 
@@ -88,6 +88,7 @@ namespace MindWaveEEGRecorder
             connector.setTaskFamiliarityEnable(true);
             connector.setTaskFamiliarityRunContinuous(true);
 
+            //Esto te pregunta por siempre si queres poner algo, hasta que le pones end
             while (true)
             {
                 Console.Write("Comment: ");
@@ -128,9 +129,11 @@ namespace MindWaveEEGRecorder
         // Called when a device is connected 
         static void OnDeviceConnected(object sender, EventArgs e)
         {
+            //Es un listener de eventos
             Connector.DeviceEventArgs de = (Connector.DeviceEventArgs)e;
             Console.WriteLine("Device found on: " + de.Device.PortName);
 
+            //Te pide crear un archivo para cada session
             try
             {
                 // Determine whether the directory exists. 
@@ -151,7 +154,8 @@ namespace MindWaveEEGRecorder
             }
             finally { }
 
-
+            //String myDocumentPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            //File.Create(myDocumentPath + "info.txt");
             File.AppendAllText(path + "info.txt", testName + "|" + testDate + "|" + testComments);
             
             try
@@ -224,6 +228,7 @@ namespace MindWaveEEGRecorder
                             Console.WriteLine("");
                             Console.WriteLine("There is a poor signal. Please adjust headset or check battery.");
                             Console.Write("Comment:");
+                            poorsignal = tgParser.ParsedData[i][key];
                         }
                         if (key == "Attention")
                         {
@@ -272,13 +277,19 @@ namespace MindWaveEEGRecorder
                                 Console.WriteLine("Gamma2Tot: " + (uint)tgParser.ParsedData[i]["EegPowerGamma2"]);
                                 //poorsignal = tgParser.ParsedData[i]["PoorSignal"];
                                 Console.WriteLine(" --- ");
-
-                                Conexion.Open();
+                                try
+                                {
+                                    Conexion.Open();
+                                } catch(Exception ex){
+                                    Console.WriteLine("Error opening a conection" + ex.Message);
+                                    throw ex;
+                                }
+                                
                                 //string SqlQuery = "INSERT INTO TESIS_DATOS_MINDWAVE(HORARIO_DE_PC,TEST_NAME,TEST_COMMENT,PORT,ROW_TIME,POORSIGNAL,ATTENTION,MEDITATION,EGGPOWER,EegPowerDelta,EegPowerTheta,EegPowerAlpha1,EegPowerAlpha2,EegPowerBeta1,EegPowerBeta2,EegPowerGamma1,EegPowerGamma2) VALUES('" + DateTime.Now + "','" + null + "','" + null + "','" + null + "'," + taim + "," + tgParser.ParsedData[i]["PoorSignal"] + "," + 0 + "," + 0 + "," + EegPowerMax + "," + DeltaTot + "," + ThetaTot + "," + Alpha1Tot + "," + Alpha2Tot + "," + Beta1Tot + "," + Beta2Tot + "," + Gamma1Tot + "," + Gamma2Tot + ")";
                                 Console.WriteLine("antes");
                                 
                                 //string SqlQuery = "INSERT INTO TESIS_DATOS_PRUEBA(NUMERO) VALUES("+1+")";
-                                string SqlQuery = "INSERT INTO NEUROSKY_DATOS(HORARIO_DE_PC,TEST_NAME,TEST_COMMENT,PORT,ROW_TIME,POORSIGNAL,ATTENTION,MEDITATION,EGGPOWER,EegPowerDelta,EegPowerTheta,EegPowerAlpha1,EegPowerAlpha2,EegPowerBeta1,EegPowerBeta2,EegPowerGamma1,EegPowerGamma2) VALUES('" + DateTime.Now.ToString("dd/MM/yyyy hh:mm:ss.fff tt") + "','"+testName+"','"+testComments+"','"+portName+"'," + taim + "," + AttentionTot + "," + MeditationTot + "," + EegPowerMax + "," + DeltaTot + "," + ThetaTot + "," + Alpha1Tot + "," + Alpha2Tot + "," + Beta1Tot + "," + Beta2Tot + "," + Gamma1Tot + "," + Gamma2Tot + ")";
+                                string SqlQuery = "INSERT INTO NEUROSKY_DATOS(HORARIO_DE_PC,TEST_NAME,TEST_COMMENT,PORT,ROW_TIME,POORSIGNAL,ATTENTION,MEDITATION,EGGPOWER,EegPowerDelta,EegPowerTheta,EegPowerAlpha1,EegPowerAlpha2,EegPowerBeta1,EegPowerBeta2,EegPowerGamma1,EegPowerGamma2) VALUES('" + DateTime.Now.ToString("dd/MM/yyyy hh:mm:ss.fff tt") + "','"+testName+"','"+testComments+"','"+portName+"'," + taim + "," + poorsignal +"," + AttentionTot + "," + MeditationTot + "," + EegPowerMax + "," + DeltaTot + "," + ThetaTot + "," + Alpha1Tot + "," + Alpha2Tot + "," + Beta1Tot + "," + Beta2Tot + "," + Gamma1Tot + "," + Gamma2Tot + ")";
                                 //," + 1 + "
                                 //string SqlQuery = "INSERT INTO TESIS_DATOS_MINDWAVE(HORARIO_DE_PC,TEST_NAME,TEST_COMMENT,PORT,ROW_TIME,POORSIGNAL,ATTENTION,MEDITATION,EGGPOWER,EegPowerDelta,EegPowerTheta,EegPowerAlpha1,EegPowerAlpha2,EegPowerBeta1,EegPowerBeta2,EegPowerGamma1,EegPowerGamma2) VALUES('" + DateTime.Now + "','" + testName.ToString() + "','" + testComments.ToString() + "','" + portName.ToString() + "'," + tgParser.ParsedData[i]["Time"] + "," + tgParser.ParsedData[i]["PoorSignal"] + "," + tgParser.ParsedData[i]["Attention"] + "," + tgParser.ParsedData[i]["Meditation"] + "," + tgParser.ParsedData[i]["EegPower"] + "," + tgParser.ParsedData[i]["EegPowerDelta"] + "," + tgParser.ParsedData[i]["EegPowerTheta"] + "," + tgParser.ParsedData[i]["EegPowerAlpha1"] + "," + tgParser.ParsedData[i]["EegPowerAlpha2"] + "," + tgParser.ParsedData[i]["EegPowerBeta1"] + "," + tgParser.ParsedData[i]["EegPowerBeta2"] + "," + tgParser.ParsedData[i]["EegPowerGamma1"] + "," + tgParser.ParsedData[i]["EegPowerGamma2"] + ")";
                                 cmd = new SqlCommand(SqlQuery, Conexion);
